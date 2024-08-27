@@ -1,0 +1,31 @@
+{
+  "name": "para-quote",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "lint": "not yet implemented",
+    "dev": "nodemon build/index.js",
+    "start": "node dist/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@fastify/cors": "^9.0.1",
+    "axios": "^1.7.5",
+    "cheerio": "^1.0.0",
+    "fastify": "^4.28.1",
+    "fastify-plugin": "^4.5.1",
+    "mongoose": "^8.5.4"
+  },
+  "devDependencies": {
+    "@types/mongoose": "^5.11.97",
+    "@types/node": "^22.5.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4"
+  }
+}
