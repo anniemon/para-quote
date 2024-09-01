@@ -106,6 +106,7 @@ sw.*
 # custom config
 customConfig.js
 *.customConfig.js
+*.config
 
 # vscode debug
 .vscode
