@@ -22,7 +22,7 @@ export async function init(fastify: FastifyInstance, opts?: FastifyRegisterOptio
   });
 
   await fastify.register(Cors, {
-    origin: false,
+    origin: true,
   });
 
   await fastify.register(AutoLoad, {
