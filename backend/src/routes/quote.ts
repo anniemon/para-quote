@@ -1,7 +1,14 @@
 import axios from 'axios';
 import { load } from 'cheerio';
-import { S } from 'fluent-json-schema';
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import { S } from 'fluent-json-schema';
+interface Quote {
+  author: string;
+  book: string;
+  quote: string;
+  publisher: string;
+  date: string;
+}
 
 export default async function quote(fastify: FastifyInstance) {
   fastify.route({
@@ -26,40 +33,40 @@ export default async function quote(fastify: FastifyInstance) {
   });
 
   async function getRandomQuotes(_req: FastifyRequest, reply: FastifyReply) {
-    try {
-      const YES24 = 'https://www.yes24.com';
-      const SOCIAL_POLITICS =
-        'https://www.yes24.com/Product/Category/AttentionNewProduct?pageNumber=1&pageSize=5&categoryNumber=001001022';
-      const LITERATURE =
-        'https://www.yes24.com/Product/Category/AttentionNewProduct?pageNumber=1&pageSize=5&categoryNumber=001001046';
-      const ESSAY =
-        'https://www.yes24.com/Product/Category/AttentionNewProduct?pageNumber=1&pageSize=5&categoryNumber=001001047';
-      const HUMANITIES =
-        'https://www.yes24.com/Product/Category/AttentionNewProduct?pageNumber=1&pageSize=5&categoryNumber=001001019';
-      const SCIENCE =
-        'https://www.yes24.com/Product/Category/AttentionNewProduct?pageNumber=1&pageSize=5&categoryNumber=001001002';
-      const ART =
-        'https://www.yes24.com/Product/Category/AttentionNewProduct?pageNumber=1&pageSize=5&categoryNumber=001001007';
+    const randomPageNumber = (Math.floor(Math.random() * 10) + 1).toString();
+    const YES24 = 'https://www.yes24.com';
 
+    const SOCIAL_POLITICS = `https://www.yes24.com/Product/Category/AttentionNewProduct?pageNumber=${randomPageNumber}&pageSize=5&categoryNumber=001001022`;
+    const LITERATURE = `https://www.yes24.com/Product/Category/AttentionNewProduct?pageNumber=${randomPageNumber}&pageSize=5&categoryNumber=001001046`;
+    const ESSAY = `https://www.yes24.com/Product/Category/AttentionNewProduct?pageNumber=${randomPageNumber}&pageSize=5&categoryNumber=001001047`;
+    const HUMANITIES = `https://www.yes24.com/Product/Category/AttentionNewProduct?${randomPageNumber}=1&pageSize=5&categoryNumber=001001019`;
+    const SCIENCE = `https://www.yes24.com/Product/Category/AttentionNewProduct?${randomPageNumber}=1&pageSize=5&categoryNumber=001001002`;
+    const ART = `https://www.yes24.com/Product/Category/AttentionNewProduct?${randomPageNumber}=1&pageSize=5&categoryNumber=001001007`;
+
+    try {
       const reqByCategories = [SOCIAL_POLITICS, SCIENCE, ART, LITERATURE, ESSAY, HUMANITIES].map((url) => {
         return axios.get(url);
       });
-      const res = await Promise.all(reqByCategories);
 
+      const res = await Promise.all(reqByCategories);
       const $ = load(res.map((response) => response.data).join(''));
 
       const booksUrl: string[] = [];
 
       $('a.gd_name').each((_, element) => {
-        booksUrl.push(element.attribs.href);
+        if (element.attribs.href.startsWith('/Product')) {
+          booksUrl.push(element.attribs.href);
+        }
       });
 
-      const reqByItems = Array.from(new Set(booksUrl)).map((hyperlink) => {
-        return axios.get(YES24 + hyperlink);
+      const reqByItems = Array.from(new Set(booksUrl)).map((bookLink) => {
+        return axios.get(YES24 + bookLink);
       });
       const responses = await Promise.all(reqByItems);
 
-      const quotes = responses.map((response) => {
+      const quotesWithMeta: Quote[] = [];
+
+      responses.map((response) => {
         const $ = load(response.data);
         if (!$) return;
 
@@ -70,24 +77,28 @@ export default async function quote(fastify: FastifyInstance) {
           publisher: 'span.gd_pub',
           date: 'span.gd_date',
         });
-        const quote = bookMeta.quote
-          ?.replace(/\s{2,}/g, '')
+        if (!bookMeta || !bookMeta.quote || !bookMeta.title) return;
+
+        const parsedQuote = bookMeta.quote
+          .replace(/\s{2,}/g, '')
           .replace(/[\r\n]+/g, '')
           .replace('\t', '')
           .replace('책 속으로', '')
-          .split('<br/>')[0];
+          ?.split('<br/>')[0];
 
-        return {
-          quote,
-          author: bookMeta.author,
+        // TODO: more delicate validation
+        quotesWithMeta.push({
+          quote: typeof parsedQuote === 'string' ? parsedQuote : '',
+          author: bookMeta.author ?? '',
           book: bookMeta.title,
-          publisher: bookMeta.publisher,
-          date: bookMeta.date,
-        };
+          publisher: bookMeta.publisher ?? '',
+          date: bookMeta.date ?? '',
+        });
       });
-      return reply.send({ data: quotes });
-    } catch (error) {
-      console.error('Error fetching quotes:', error);
+
+      return reply.send({ data: quotesWithMeta });
+    } catch (err) {
+      console.error('Error fetching quotes:', err);
       return [];
     }
   }
