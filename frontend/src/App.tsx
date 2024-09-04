@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Container, Card, Row, Col } from 'react-bootstrap';
 
 interface Quote {
@@ -14,21 +14,17 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchQuotes = async () => {
-      try {
-        const response = await fetch('http://localhost:8080/quotes');
-        const data = await response.json();
+  useMemo(async () => {
+    try {
+      const response = await fetch('http://localhost:8080/quotes');
+      const data = await response.json();
 
-        setQuotes(data.data);
-      } catch (err) {
-        console.error('Error fetching quotes:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    // TODO: prevent double fetching for reload
-    fetchQuotes();
+      setQuotes(data.data);
+    } catch (err) {
+      console.error('Error fetching quotes:', err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   if (loading) {
