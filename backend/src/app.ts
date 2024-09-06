@@ -31,7 +31,7 @@ export async function init(fastify: FastifyInstance, opts?: FastifyRegisterOptio
   });
 
   await fastify.register(AutoLoad, {
-    dir: join(import.meta.url, 'routes'),
+    dir: join(import.meta.url, 'quote'),
     dirNameRoutePrefix: false,
     options: Object.assign({}, opts),
   });
